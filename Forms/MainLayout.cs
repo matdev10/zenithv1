@@ -2,6 +2,10 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
+using System.Linq;
 
 namespace zenith_v1.Forms
 {
@@ -10,6 +14,12 @@ namespace zenith_v1.Forms
         private Panel sidebar;
         private Panel header;
         private Panel contentPanel;
+
+
+        private Label lblVentasDia;
+        private Label lblProductos;
+        private Label lblClientes;
+        private Label lblStockBajo;
 
         private readonly Color Fondo = Color.FromArgb(5, 7, 13);
         private readonly Color Panel = Color.FromArgb(11, 18, 32);
@@ -29,7 +39,56 @@ namespace zenith_v1.Forms
             CrearHeader();
             CrearContent();
             MostrarDashboard();
+
         }
+
+
+        private async Task CargarDashboard()
+        {
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    string productosJson =
+                        await client.GetStringAsync(
+                            "http://127.0.0.1:8000/api/productos/"
+                        );
+
+                    string clientesJson =
+                        await client.GetStringAsync(
+                            "http://127.0.0.1:8000/api/clientes/"
+                        );
+
+                    JArray productos = JArray.Parse(productosJson);
+                    JArray clientes = JArray.Parse(clientesJson);
+
+                    int totalProductos = productos.Count;
+                    int totalClientes = clientes.Count;
+
+                    int stockBajo = productos.Count(p =>
+                        (int?)p["stock"] <= 5
+                    );
+
+                    lblProductos.Text = totalProductos.ToString();
+                    lblClientes.Text = totalClientes.ToString();
+                    lblStockBajo.Text = stockBajo.ToString();
+
+                    lblVentasDia.Text = "$0";
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Error dashboard: " + ex.Message
+                );
+
+                lblProductos.Text = "-";
+                lblClientes.Text = "-";
+                lblStockBajo.Text = "-";
+                lblVentasDia.Text = "-";
+            }
+        }
+        
 
         private void ConfigurarVentana()
         {
@@ -200,10 +259,41 @@ namespace zenith_v1.Forms
 
             contentPanel.Controls.Add(cards);
 
-            cards.Controls.Add(CrearCard("Ventas del día", "$0", "Resumen diario", Verde));
-            cards.Controls.Add(CrearCard("Productos", "0", "Stock disponible", Celeste));
-            cards.Controls.Add(CrearCard("Clientes", "0", "Registrados", Morado));
-            cards.Controls.Add(CrearCard("Stock bajo", "0", "Requiere atención", Rojo));
+            cards.Controls.Add(
+    CrearCard(
+        "Ventas del día",
+        "Resumen diario",
+        Verde,
+        out lblVentasDia
+    )
+);
+
+            cards.Controls.Add(
+                CrearCard(
+                    "Productos",
+                    "Stock disponible",
+                    Celeste,
+                    out lblProductos
+                )
+            );
+
+            cards.Controls.Add(
+                CrearCard(
+                    "Clientes",
+                    "Registrados",
+                    Morado,
+                    out lblClientes
+                )
+            );
+
+            cards.Controls.Add(
+                CrearCard(
+                    "Stock bajo",
+                    "Requiere atención",
+                    Rojo,
+                    out lblStockBajo
+                )
+            );
 
             Panel acciones = CrearPanelRedondeado();
             acciones.Dock = DockStyle.Top;
@@ -265,11 +355,22 @@ namespace zenith_v1.Forms
 
             resumen.Controls.Add(textoResumen);
             resumen.Controls.Add(tituloResumen);
+
+            _ = CargarDashboard();
         }
 
-        private Panel CrearCard(string titulo, string valor, string detalle, Color color)
+
+
+
+
+        private Panel CrearCard(
+            string titulo,
+            string detalle,
+            Color color,
+            out Label lblValor)
         {
             Panel card = CrearPanelRedondeado();
+
             card.Width = 205;
             card.Height = 120;
             card.Margin = new Padding(0, 0, 18, 0);
@@ -284,9 +385,9 @@ namespace zenith_v1.Forms
                 Height = 26
             };
 
-            Label lblValor = new Label
+            lblValor = new Label
             {
-                Text = valor,
+                Text = "...",
                 ForeColor = Texto,
                 Font = new Font("Segoe UI", 22F, FontStyle.Bold),
                 Dock = DockStyle.Top,
@@ -308,6 +409,11 @@ namespace zenith_v1.Forms
 
             return card;
         }
+
+
+
+
+
 
         private Button CrearAccesoButton(string texto, Color color)
         {
