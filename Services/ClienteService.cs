@@ -1,9 +1,10 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using zenith_v1.Models;
 
 namespace zenith_v1.Services
 {
@@ -11,10 +12,34 @@ namespace zenith_v1.Services
     {
         private readonly HttpClient client;
 
+        private readonly string baseUrl =
+            "http://127.0.0.1:8000/api/clientes/";
+
         public ClienteService()
         {
             client = new HttpClient();
             client.Timeout = TimeSpan.FromSeconds(5);
+        }
+
+        public async Task<List<Cliente>> ObtenerClientesAsync()
+        {
+            try
+            {
+                string url = baseUrl + "?t=" + DateTime.Now.Ticks;
+
+                var response = await client.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                    return new List<Cliente>();
+
+                string json = await response.Content.ReadAsStringAsync();
+
+                return JsonConvert.DeserializeObject<List<Cliente>>(json);
+            }
+            catch
+            {
+                return new List<Cliente>();
+            }
         }
 
         public async Task<string> CrearClienteAsync(object clienteData)
@@ -30,18 +55,11 @@ namespace zenith_v1.Services
                 );
 
                 var response = await client.PostAsync(
-                    "https://zeezton.cl/api/clientes/crear/",
+                    baseUrl + "crear/",
                     content
                 );
 
-                string respuesta = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    return "{\"error\":\"Error al crear cliente\"}";
-                }
-
-                return respuesta;
+                return await response.Content.ReadAsStringAsync();
             }
             catch
             {
@@ -49,35 +67,27 @@ namespace zenith_v1.Services
             }
         }
 
-        public async Task<string> BuscarClientePorRutAsync(string rut)
+        public async Task<Cliente> BuscarClientePorRutAsync(string rut)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(rut))
-                    return "{\"error\":\"RUT vacío\"}";
-
                 string url =
-                    "https://zeezton.cl/api/clientes/buscar/?rut="
-                    + Uri.EscapeDataString(rut.Trim());
+                    baseUrl +
+                    "buscar/?rut=" +
+                    Uri.EscapeDataString(rut.Trim());
 
                 var response = await client.GetAsync(url);
 
-                string contenido = await response.Content.ReadAsStringAsync();
-
                 if (!response.IsSuccessStatusCode)
-                {
-                    return "{\"error\":\"Cliente no encontrado\"}";
-                }
+                    return null;
 
-                return contenido;
-            }
-            catch (TaskCanceledException)
-            {
-                return "{\"error\":\"Tiempo de espera agotado\"}";
+                string json = await response.Content.ReadAsStringAsync();
+
+                return JsonConvert.DeserializeObject<Cliente>(json);
             }
             catch
             {
-                return "{\"error\":\"Error de conexión\"}";
+                return null;
             }
         }
     }

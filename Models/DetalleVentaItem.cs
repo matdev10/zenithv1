@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace zenith_v1.Models
 {
-    internal class DetalleVentaItem
+    public class DetalleVentaItem
     {
         public int producto_id { get; set; }
         public int cantidad { get; set; }

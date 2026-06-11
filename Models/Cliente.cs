@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace zenith_v1.Models
 {
-    internal class Cliente
+    public class Cliente
     {
         public string numero_documento { get; set; }
         public string nombre { get; set; }

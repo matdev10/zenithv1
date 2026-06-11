@@ -80,6 +80,21 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Forms\BoletaForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\BuscarClienteForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\BuscarClienteForm.Designer.cs">
+      <DependentUpon>BuscarClienteForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\BuscarProductoForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\BuscarProductoForm.Designer.cs">
+      <DependentUpon>BuscarProductoForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Forms\loginForm.cs" />
     <Compile Include="Forms\MainForm.cs" />
     <Compile Include="Forms\MainLayout.cs">
@@ -101,6 +116,8 @@
     <Compile Include="Helpers\Alertas.cs" />
     <Compile Include="Helpers\EstilosDataGrid.cs" />
     <Compile Include="Helpers\ThemeManager.cs" />
+    <Compile Include="Models\Boleta.cs" />
+    <Compile Include="Models\BoletaDetalle.cs" />
     <Compile Include="Models\Cliente.cs" />
     <Compile Include="Models\DetalleVentaItem.cs" />
     <Compile Include="Models\Producto.cs" />

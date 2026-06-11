@@ -7,18 +7,19 @@ using System.Windows.Forms;
 using zenith_v1.Models;
 using zenith_v1.Services;
 
-
-
-
 namespace zenith_v1.Forms
 {
     public class UserVentas : UserControl
     {
 
         private Producto productoActual;
+        private Cliente clienteActual;
+
         private List<DetalleVentaItem> carrito;
+
         private ProductoService productoService;
         private VentaService ventaService;
+        private ClienteService clienteService;
 
         private TextBox txtCodigo;
         private TextBox txtCantidad;
@@ -29,7 +30,6 @@ namespace zenith_v1.Forms
         private TextBox txtRutCliente;
         private TextBox txtNombreCliente;
         private ComboBox cmbTipoDocumento;
-
 
         private readonly Color Fondo = Color.FromArgb(5, 7, 13);
         private readonly Color Card = Color.FromArgb(17, 24, 39);
@@ -46,11 +46,11 @@ namespace zenith_v1.Forms
             Dock = DockStyle.Fill;
             BackColor = Fondo;
 
-
             productoService = new ProductoService();
             ventaService = new VentaService();
-            carrito = new List<DetalleVentaItem>();
+            clienteService = new ClienteService();
 
+            carrito = new List<DetalleVentaItem>();
 
             ConstruirUI();
         }
@@ -59,54 +59,68 @@ namespace zenith_v1.Forms
         {
             Controls.Clear();
 
+            Panel contenedor = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(32, 24, 32, 32),
+                BackColor = Fondo
+            };
+
+            Controls.Add(contenedor);
+
             Label titulo = new Label
             {
                 Text = "Nueva venta",
                 ForeColor = Texto,
-                Font = new Font("Segoe UI", 24F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 26F, FontStyle.Bold),
                 Dock = DockStyle.Top,
-                Height = 50
+                Height = 58
             };
 
             Label subtitulo = new Label
             {
                 Text = "Busca productos, agrega cantidades y registra ventas.",
                 ForeColor = TextoSuave,
-                Font = new Font("Segoe UI", 10.5F),
+                Font = new Font("Segoe UI", 11F),
                 Dock = DockStyle.Top,
-                Height = 32
+                Height = 38
             };
-
-            Controls.Add(subtitulo);
-            Controls.Add(titulo);
 
             Panel layout = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(0, 20, 0, 0),
+                Padding = new Padding(0, 24, 0, 0),
                 BackColor = Fondo
             };
 
-            Controls.Add(layout);
-            layout.BringToFront();
+            contenedor.Controls.Add(layout);
+            contenedor.Controls.Add(subtitulo);
+            contenedor.Controls.Add(titulo);
 
             Panel izquierda = CrearPanelRedondeado();
             izquierda.Dock = DockStyle.Left;
-            izquierda.Width = 390;
-            izquierda.Padding = new Padding(22);
-            layout.Controls.Add(izquierda);
+            izquierda.Width = 430;
+            izquierda.Padding = new Padding(26);
+            izquierda.AutoScroll = true;
+
+            Panel separador = new Panel
+            {
+                Dock = DockStyle.Left,
+                Width = 24,
+                BackColor = Fondo
+            };
 
             Panel derecha = CrearPanelRedondeado();
             derecha.Dock = DockStyle.Fill;
-            derecha.Padding = new Padding(22);
-            derecha.Margin = new Padding(20, 0, 0, 0);
+            derecha.Padding = new Padding(28);
+
             layout.Controls.Add(derecha);
+            layout.Controls.Add(separador);
+            layout.Controls.Add(izquierda);
 
             ConstruirPanelBusqueda(izquierda);
             ConstruirPanelDetalleVenta(derecha);
-
         }
-
 
 
 
@@ -117,21 +131,47 @@ namespace zenith_v1.Forms
         {
             panel.Controls.Clear();
 
-            Button btnAgregar = CrearBoton("Agregar al carrito", Morado);
-            btnAgregar.Dock = DockStyle.Top;
-            btnAgregar.Height = 48;
-            btnAgregar.Click += BtnAgregar_Click;
+            Label titulo = CrearTituloSeccion("Buscar producto");
+            Label ayuda = CrearTextoAyuda("Selecciona un producto desde el buscador avanzado.");
 
-            txtCantidad = CrearTextBox("Cantidad");
-            txtCantidad.Dock = DockStyle.Top;
+            Button btnBuscar = CrearBoton("Abrir buscador de productos", Celeste);
+            btnBuscar.Dock = DockStyle.Top;
+            btnBuscar.Height = 54;
+            btnBuscar.Click += BtnBuscar_Click;
+
+            lblProductoSeleccionado = new Label
+            {
+                Text = "Sin producto seleccionado.",
+                ForeColor = TextoSuave,
+                Font = new Font("Segoe UI", 10.5F),
+                Dock = DockStyle.Top,
+                Height = 80,
+                Padding = new Padding(0, 14, 0, 0)
+            };
+
+            Panel separador1 = CrearSeparador(18);
+
+            Label tituloCliente = CrearTituloSeccion("Datos del cliente");
+            Label ayudaCliente = CrearTextoAyuda("Completa los datos para emitir boleta o factura.");
+
+            txtRutCliente = CrearTextBox("RUT cliente");
+            Button btnBuscarCliente = CrearBoton("Buscar cliente registrado", Celeste);
+            btnBuscarCliente.Dock = DockStyle.Top;
+            btnBuscarCliente.Height = 52;
+            btnBuscarCliente.Click += BtnBuscarCliente_Click;
+            txtRutCliente.Dock = DockStyle.Top;
+
+            txtNombreCliente = CrearTextBox("Nombre completo del cliente");
+            txtNombreCliente.Dock = DockStyle.Top;
 
             cmbTipoDocumento = new ComboBox
             {
                 Dock = DockStyle.Top,
-                Height = 42,
+                Height = 44,
                 Font = new Font("Segoe UI", 11F),
                 BackColor = Color.FromArgb(11, 18, 32),
                 ForeColor = Texto,
+                FlatStyle = FlatStyle.Flat,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
 
@@ -139,59 +179,133 @@ namespace zenith_v1.Forms
             cmbTipoDocumento.Items.Add("Factura");
             cmbTipoDocumento.SelectedIndex = 0;
 
-            txtNombreCliente = CrearTextBox("Nombre completo del cliente");
-            txtNombreCliente.Dock = DockStyle.Top;
+            txtCantidad = CrearTextBox("Cantidad");
+            txtCantidad.Dock = DockStyle.Top;
 
-            txtRutCliente = CrearTextBox("RUT cliente");
-            txtRutCliente.Dock = DockStyle.Top;
+            Panel separador2 = CrearSeparador(16);
 
-            Label tituloCliente = new Label
-            {
-                Text = "Datos del cliente",
-                ForeColor = Texto,
-                Font = new Font("Segoe UI", 15F, FontStyle.Bold),
-                Dock = DockStyle.Top,
-                Height = 42
-            };
-
-            lblProductoSeleccionado = new Label
-            {
-                Text = "Producto seleccionado:\n\nSin producto seleccionado.",
-                ForeColor = TextoSuave,
-                Font = new Font("Segoe UI", 10.5F),
-                Dock = DockStyle.Top,
-                Height = 115,
-                Padding = new Padding(0, 18, 0, 0)
-            };
-
-            Button btnBuscar = CrearBoton("Buscar producto", Celeste);
-            btnBuscar.Dock = DockStyle.Top;
-            btnBuscar.Height = 48;
-            btnBuscar.Click += BtnBuscar_Click;
-
-            txtCodigo = CrearTextBox("Código o ID del producto");
-            txtCodigo.Dock = DockStyle.Top;
-
-            Label tituloBuscar = new Label
-            {
-                Text = "Buscar producto",
-                ForeColor = Texto,
-                Font = new Font("Segoe UI", 15F, FontStyle.Bold),
-                Dock = DockStyle.Top,
-                Height = 42
-            };
+            Button btnAgregar = CrearBoton("Agregar al carrito", Morado);
+            btnAgregar.Dock = DockStyle.Top;
+            btnAgregar.Height = 56;
+            btnAgregar.Click += BtnAgregar_Click;
 
             panel.Controls.Add(btnAgregar);
+            panel.Controls.Add(separador2);
             panel.Controls.Add(txtCantidad);
             panel.Controls.Add(cmbTipoDocumento);
             panel.Controls.Add(txtNombreCliente);
             panel.Controls.Add(txtRutCliente);
+            panel.Controls.Add(btnBuscarCliente);
+            panel.Controls.Add(ayudaCliente);
             panel.Controls.Add(tituloCliente);
+            panel.Controls.Add(separador1);
             panel.Controls.Add(lblProductoSeleccionado);
             panel.Controls.Add(btnBuscar);
-            panel.Controls.Add(txtCodigo);
-            panel.Controls.Add(tituloBuscar);
+            panel.Controls.Add(ayuda);
+            panel.Controls.Add(titulo);
         }
+
+
+
+
+
+
+
+        private void ConstruirPanelDetalleVenta(Panel panel)
+        {
+            panel.Controls.Clear();
+
+            Label titulo = new Label
+            {
+                Text = "Carrito de venta",
+                ForeColor = Texto,
+                Font = new Font("Segoe UI", 18F, FontStyle.Bold),
+                Dock = DockStyle.Top,
+                Height = 50
+            };
+
+            FlowLayoutPanel acciones = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 82,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                Padding = new Padding(0, 14, 0, 0)
+            };
+
+            Button btnRegistrar = CrearBotonAncho("Registrar venta", Verde);
+            btnRegistrar.Width = 190;
+            btnRegistrar.Click += BtnRegistrar_Click;
+
+            Button btnLimpiar = CrearBotonAncho("Limpiar", Rojo);
+            btnLimpiar.Width = 150;
+            btnLimpiar.Click += (s, e) => LimpiarVenta();
+
+            acciones.Controls.Add(btnRegistrar);
+            acciones.Controls.Add(btnLimpiar);
+
+            lblTotal = new Label
+            {
+                Text = "Total: $0",
+                ForeColor = Texto,
+                Font = new Font("Segoe UI", 28F, FontStyle.Bold),
+                Dock = DockStyle.Bottom,
+                Height = 78,
+                TextAlign = ContentAlignment.MiddleRight
+            };
+
+            tablaVenta = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                BackgroundColor = Card,
+                BorderStyle = BorderStyle.None,
+                EnableHeadersVisualStyles = false,
+                RowHeadersVisible = false,
+                AllowUserToAddRows = false,
+                AllowUserToResizeRows = false,
+                ReadOnly = true,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                MultiSelect = false,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+            };
+
+            tablaVenta.ColumnHeadersHeight = 42;
+            tablaVenta.RowTemplate.Height = 38;
+
+            tablaVenta.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(20, 28, 43);
+            tablaVenta.ColumnHeadersDefaultCellStyle.ForeColor = Texto;
+            tablaVenta.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+
+            tablaVenta.DefaultCellStyle.BackColor = Color.FromArgb(11, 18, 32);
+            tablaVenta.DefaultCellStyle.ForeColor = Texto;
+            tablaVenta.DefaultCellStyle.SelectionBackColor = Morado;
+            tablaVenta.DefaultCellStyle.SelectionForeColor = Color.White;
+            tablaVenta.DefaultCellStyle.Font = new Font("Segoe UI", 10F);
+
+            tablaVenta.GridColor = Borde;
+
+            tablaVenta.Columns.Clear();
+
+            tablaVenta.Columns.Add("ProductoId", "ProductoId");
+            tablaVenta.Columns["ProductoId"].Visible = false;
+
+            tablaVenta.Columns.Add("Producto", "Producto");
+            tablaVenta.Columns.Add("Precio", "Precio");
+            tablaVenta.Columns.Add("Cantidad", "Cantidad");
+            tablaVenta.Columns.Add("Subtotal", "Subtotal");
+
+            tablaVenta.Columns["Producto"].FillWeight = 50;
+            tablaVenta.Columns["Precio"].FillWeight = 18;
+            tablaVenta.Columns["Cantidad"].FillWeight = 14;
+            tablaVenta.Columns["Subtotal"].FillWeight = 18;
+
+            panel.Controls.Add(tablaVenta);
+            panel.Controls.Add(lblTotal);
+            panel.Controls.Add(acciones);
+            panel.Controls.Add(titulo);
+        }
+
+
 
 
 
@@ -202,41 +316,31 @@ namespace zenith_v1.Forms
         {
             try
             {
-                string codigo = txtCodigo.Text.Trim();
-
-                if (codigo == "Código o ID del producto" || string.IsNullOrWhiteSpace(codigo))
-                {
-                    MessageBox.Show("Ingresa un ID de producto.");
-                    return;
-                }
-
-                if (!int.TryParse(codigo, out int productoId))
-                {
-                    MessageBox.Show("El ID del producto debe ser numérico.");
-                    return;
-                }
-
                 var productos = await productoService.ObtenerProductosAsync();
+                BuscarProductoForm modal = new BuscarProductoForm(productos);
 
-                productoActual = productos.FirstOrDefault(p => p.id == productoId);
-
-                if (productoActual == null)
+                if (modal.ShowDialog() == DialogResult.OK)
                 {
-                    lblProductoSeleccionado.Text = "Producto seleccionado:\n\nProducto no encontrado.";
-                    return;
-                }
+                    productoActual = modal.ProductoSeleccionado;
 
-                lblProductoSeleccionado.Text =
-                    $"Producto seleccionado:\n\n" +
-                    $"{productoActual.nombre}\n" +
-                    $"Precio: ${productoActual.precio:N0}\n" +
-                    $"Stock: {productoActual.stock}";
+                    if (productoActual != null)
+                    {
+                        lblProductoSeleccionado.Text =
+                            $"Producto seleccionado:\n\n" +
+                            $"{productoActual.nombre}\n" +
+                            $"Precio: ${productoActual.precio:N0}\n" +
+                            $"Stock: {productoActual.stock}";
+                    }
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error al buscar producto: " + ex.Message);
+                MessageBox.Show("Error al cargar productos: " + ex.Message);
             }
         }
+
+
+
 
 
 
@@ -274,18 +378,53 @@ namespace zenith_v1.Forms
             int subtotal = productoActual.precio * cantidad;
 
             tablaVenta.Rows.Add(
-               productoActual.id,
-               productoActual.nombre,
-               productoActual.precio.ToString("N0"),
+                productoActual.id,
+                productoActual.nombre,
+                productoActual.precio.ToString("N0"),
                 cantidad,
                 subtotal.ToString("N0")
-             );
+            );
 
             ActualizarTotal();
 
             txtCantidad.Text = "Cantidad";
             txtCantidad.ForeColor = TextoSuave;
         }
+
+
+
+
+        private async void BtnBuscarCliente_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var clientes = await clienteService.ObtenerClientesAsync();
+
+                BuscarClienteForm modal = new BuscarClienteForm(clientes);
+
+                if (modal.ShowDialog() == DialogResult.OK)
+                {
+                    clienteActual = modal.ClienteSeleccionado;
+
+                    if (clienteActual != null)
+                    {
+                        txtRutCliente.Text = clienteActual.rut;
+                        txtRutCliente.ForeColor = Texto;
+
+                        txtNombreCliente.Text =
+                            $"{clienteActual.nombre} {clienteActual.apellido}".Trim();
+
+                        txtNombreCliente.ForeColor = Texto;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al cargar clientes: " + ex.Message);
+            }
+        }
+
+
 
 
 
@@ -307,93 +446,6 @@ namespace zenith_v1.Forms
             }
 
             lblTotal.Text = $"Total: ${total:N0}";
-        }
-
-
-
-
-        private void ConstruirPanelDetalleVenta(Panel panel)
-        {
-            Label titulo = new Label
-            {
-                Text = "Detalle de venta",
-                ForeColor = Texto,
-                Font = new Font("Segoe UI", 15F, FontStyle.Bold),
-                Dock = DockStyle.Top,
-                Height = 40
-            };
-
-            panel.Controls.Add(titulo);
-
-            tablaVenta = new DataGridView
-            {
-                Dock = DockStyle.Top,
-                Height = 280,
-                BackgroundColor = Card,
-                BorderStyle = BorderStyle.None,
-                EnableHeadersVisualStyles = false,
-                RowHeadersVisible = false,
-                AllowUserToAddRows = false,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
-            };
-
-            tablaVenta.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(20, 28, 43);
-            tablaVenta.ColumnHeadersDefaultCellStyle.ForeColor = Texto;
-            tablaVenta.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-
-            tablaVenta.DefaultCellStyle.BackColor = Color.FromArgb(11, 18, 32);
-            tablaVenta.DefaultCellStyle.ForeColor = Texto;
-            tablaVenta.DefaultCellStyle.SelectionBackColor = Morado;
-            tablaVenta.DefaultCellStyle.SelectionForeColor = Color.White;
-            tablaVenta.GridColor = Borde;
-
-            tablaVenta.Columns.Clear();
-
-            tablaVenta.Columns.Add("ProductoId", "ProductoId");
-            tablaVenta.Columns["ProductoId"].Visible = false;
-
-            tablaVenta.Columns.Add("Producto", "Producto");
-            tablaVenta.Columns.Add("Precio", "Precio");
-            tablaVenta.Columns.Add("Cantidad", "Cantidad");
-            tablaVenta.Columns.Add("Subtotal", "Subtotal");
-
-            tablaVenta.Columns["Producto"].FillWeight = 45;
-            tablaVenta.Columns["Precio"].FillWeight = 20;
-            tablaVenta.Columns["Cantidad"].FillWeight = 15;
-            tablaVenta.Columns["Subtotal"].FillWeight = 20;
-
-            panel.Controls.Add(tablaVenta);
-
-            lblTotal = new Label
-            {
-                Text = "Total: $0",
-                ForeColor = Texto,
-                Font = new Font("Segoe UI", 24F, FontStyle.Bold),
-                Dock = DockStyle.Top,
-                Height = 70,
-                TextAlign = ContentAlignment.MiddleRight
-            };
-
-            panel.Controls.Add(lblTotal);
-
-            FlowLayoutPanel acciones = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                Height = 75,
-                FlowDirection = FlowDirection.RightToLeft,
-                WrapContents = false
-            };
-
-            panel.Controls.Add(acciones);
-
-            Button btnRegistrar = CrearBotonAncho("Registrar venta", Verde);
-            btnRegistrar.Click += BtnRegistrar_Click;
-
-            Button btnLimpiar = CrearBotonAncho("Limpiar", Rojo);
-            btnLimpiar.Click += BtnLimpiar_Click;
-
-            acciones.Controls.Add(btnRegistrar);
-            acciones.Controls.Add(btnLimpiar);
         }
 
 
@@ -435,6 +487,11 @@ namespace zenith_v1.Forms
             return txt;
         }
 
+
+
+
+
+
         private Button CrearBoton(string texto, Color color)
         {
             Button btn = new Button
@@ -449,9 +506,11 @@ namespace zenith_v1.Forms
             };
 
             btn.FlatAppearance.BorderSize = 0;
-
             return btn;
         }
+
+
+
 
         private Button CrearBotonAncho(string texto, Color color)
         {
@@ -461,6 +520,44 @@ namespace zenith_v1.Forms
             btn.Margin = new Padding(12, 12, 0, 0);
             return btn;
         }
+
+        private Label CrearTituloSeccion(string texto)
+        {
+            return new Label
+            {
+                Text = texto,
+                ForeColor = Texto,
+                Font = new Font("Segoe UI", 17F, FontStyle.Bold),
+                Dock = DockStyle.Top,
+                Height = 44
+            };
+        }
+
+        private Label CrearTextoAyuda(string texto)
+        {
+            return new Label
+            {
+                Text = texto,
+                ForeColor = TextoSuave,
+                Font = new Font("Segoe UI", 9.5F),
+                Dock = DockStyle.Top,
+                Height = 34
+            };
+        }
+
+        private Panel CrearSeparador(int alto)
+        {
+            return new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = alto,
+                BackColor = Card
+            };
+        }
+
+
+
+
 
         private Panel CrearPanelRedondeado()
         {
@@ -496,6 +593,8 @@ namespace zenith_v1.Forms
         }
 
 
+
+
         private async void BtnRegistrar_Click(object sender, EventArgs e)
         {
             try
@@ -528,23 +627,43 @@ namespace zenith_v1.Forms
                     return;
                 }
 
-                var detalles = new List<object>();
+                var detallesApi = new List<object>();
+                var detallesBoleta = new List<BoletaDetalle>();
+
+                int total = 0;
 
                 foreach (DataGridViewRow row in tablaVenta.Rows)
                 {
                     if (row.IsNewRow) continue;
 
-                    detalles.Add(new
-                    {
-                        producto_id = Convert.ToInt32(row.Cells["ProductoId"].Value),
-                        cantidad = Convert.ToInt32(row.Cells["Cantidad"].Value)
-                    });
-                }
+                    int productoId = Convert.ToInt32(row.Cells["ProductoId"].Value);
+                    string producto = row.Cells["Producto"].Value.ToString();
 
-                if (detalles.Count == 0)
-                {
-                    MessageBox.Show("No hay productos válidos en el carrito.");
-                    return;
+                    int precio = Convert.ToInt32(
+                        row.Cells["Precio"].Value.ToString().Replace(".", "").Replace(",", "")
+                    );
+
+                    int cantidad = Convert.ToInt32(row.Cells["Cantidad"].Value);
+
+                    int subtotal = Convert.ToInt32(
+                        row.Cells["Subtotal"].Value.ToString().Replace(".", "").Replace(",", "")
+                    );
+
+                    total += subtotal;
+
+                    detallesApi.Add(new
+                    {
+                        producto_id = productoId,
+                        cantidad = cantidad
+                    });
+
+                    detallesBoleta.Add(new BoletaDetalle
+                    {
+                        Producto = producto,
+                        Cantidad = cantidad,
+                        Precio = precio,
+                        Subtotal = subtotal
+                    });
                 }
 
                 var ventaData = new
@@ -555,12 +674,23 @@ namespace zenith_v1.Forms
                         numero_documento = rut,
                         nombre_completo = nombre
                     },
-                    detalles = detalles
+                    detalles = detallesApi
                 };
 
-                string respuesta = await ventaService.CrearVentaAsync(ventaData);
+                await ventaService.CrearVentaAsync(ventaData);
 
-                MessageBox.Show("Venta registrada correctamente.");
+                Boleta boleta = new Boleta
+                {
+                    Numero = DateTime.Now.Millisecond,
+                    Cliente = nombre,
+                    Rut = rut,
+                    Fecha = DateTime.Now,
+                    Total = total,
+                    Detalles = detallesBoleta
+                };
+
+                BoletaForm boletaForm = new BoletaForm(boleta);
+                boletaForm.ShowDialog();
 
                 LimpiarVenta();
             }
@@ -572,13 +702,6 @@ namespace zenith_v1.Forms
 
 
 
-
-
-
-        private void BtnLimpiar_Click(object sender, EventArgs e)
-        {
-            LimpiarVenta();
-        }
 
         private void LimpiarVenta()
         {
@@ -592,17 +715,14 @@ namespace zenith_v1.Forms
             txtNombreCliente.Text = "Nombre completo del cliente";
             txtNombreCliente.ForeColor = TextoSuave;
 
-            txtCodigo.Text = "Código o ID del producto";
-            txtCodigo.ForeColor = TextoSuave;
-
             txtCantidad.Text = "Cantidad";
             txtCantidad.ForeColor = TextoSuave;
 
             lblProductoSeleccionado.Text =
-                "Producto seleccionado:\n\nSin producto seleccionado.";
+                "Sin producto seleccionado.";
 
             productoActual = null;
+            clienteActual = null;
         }
     }
-
 }

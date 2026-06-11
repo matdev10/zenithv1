@@ -12,7 +12,7 @@ namespace zenith_v1.Services
     internal class ProductoService
     {
         private readonly HttpClient _httpClient;
-        private readonly string _url = "https://zeezton.cl/api/productos/";
+        private readonly string _url = "http://127.0.0.1:8000/api/productos/";
 
         public ProductoService()
         {
